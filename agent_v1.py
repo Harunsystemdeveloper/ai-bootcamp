@@ -9,6 +9,7 @@ MODEL = "claude-haiku-5-5"
 # ---------- DEL 1: Verktygen (anteckningsblocket) ----------
 notes: list[str] = [] # en tom lista där anteckningarna hamnar
 
+ # ------------------ Python funktioner -------------#
 def add_note(text: str) -> str:
     notes.append(text)
     return f"Anteckning sparad (#{len(notes)})."
@@ -17,6 +18,14 @@ def list_notes() -> str:
     if not notes:
         return"Inga anteckningar ännu."
     return "\n".join(f"{i}. {n}" for i, n in enumerate(notes, start=1))
+
+def delete_note(number: int) -> str:
+
+    if number < 1 or number > len(notes):
+        return f"Fel: anteckning {number} finns inte. Det finns {len(notes)} anteckningar."
+    removed = notes.pop(number -1)
+    return F"Anteckning {number} borttagen: {removed}"
+    
 
 # ---------- DEL 2: Bruksanvisningen (det Claude får läsa) ----------
 TOOLS = [
@@ -36,10 +45,22 @@ TOOLS = [
         "description": "Lista alla sparade anteckningar. Använd när användaren frågar vad som finns sparat.",
         "input_schema": {"type": "object", "properties": {}},
     },
+
+    {
+        "name": "delete_note",
+        "description": "Ta bort en anteckning med dess nummer. Använd när användaren vill radera eller ta bort något. Numret är samma som visas av list_notes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "number": {"type": "integer", "description": "Numret på anteckningen som ska tas bort (börjar på 1)."}
+            },
+            "required": ["number"],
+        },
+    }
 ]
 
 # Kopplar ihop namnet Claude säger med rätt Python-funktion
-TOOL_FUNCTIONS = {"add_note": add_note, "list_notes": list_notes}
+TOOL_FUNCTIONS = {"add_note": add_note, "list_notes": list_notes, "delete_note": delete_note}
 
 # ---------- DEL 3: Du som använder verktyget ----------
 def run_tool(name: str, args: dict) -> str:
@@ -91,7 +112,9 @@ def run_agent(user_message: str, max_steps: int = 5) -> str:
 
 if __name__ == "__main__":
     answer = run_agent(
-        "Spara att jag ska köpa mjölk och att jag har möte kl 10 på måndag. "
-        "Visa sedan alla mina anteckningar."
+        "Spara tre anteckningar: köpa mjölk, ringa mamma och träna. "
+        "Ta sedan bort anteckning 2. "
+        "Försök också ta bort anteckning 99. "
+        "Visa till sist alla anteckningar."
     )
     print("\n🤖", answer)
